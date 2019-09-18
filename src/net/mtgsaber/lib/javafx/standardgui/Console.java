@@ -20,6 +20,7 @@ import java.time.format.DateTimeFormatter;
 public class Console extends OutputStream implements Tickable {
     public final TextArea TA_CONSOLE;
     private final StringBuilder STR_BUFFER;
+    private volatile int maxLength = 16384;
 
     public Console(TextArea TA_CONSOLE) {
         super();
@@ -38,8 +39,9 @@ public class Console extends OutputStream implements Tickable {
             STR_BUFFER.replace(0, STR_BUFFER.length(), "");
 
             Platform.runLater(() -> {
-                while (TA_CONSOLE.getLength() > 8192)
-                    TA_CONSOLE.deleteText(0, 4096);
+                int max = maxLength, partition = max / 4;
+                while (TA_CONSOLE.getLength() > max)
+                    TA_CONSOLE.deleteText(0, partition);
                 TA_CONSOLE.appendText(buffer);
             });
         }
@@ -47,6 +49,15 @@ public class Console extends OutputStream implements Tickable {
 
     public synchronized void run() {
         tick();
+    }
+
+    public int getMaxLength() {
+        return maxLength;
+    }
+
+    public void setMaxLength(int maxLength) {
+        if (maxLength > 0)
+            this.maxLength = maxLength;
     }
 
     public static class ConsolePrinter extends PrintStream {
